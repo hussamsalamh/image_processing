@@ -1,14 +1,28 @@
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+import os
+import pandas as pd
+FONT = cv2.FONT_HERSHEY_SIMPLEX
+ID_LENGTH = 8
+HEGIHT = 50
 
+"""
+Note : the name only will work if they in english and also could not make them
+virtacl 
+
+"""
 
 class fillID:
-    def __init__(self,students):
+    def __init__(self, image, studentsInfo, outputPath):
+        self.output = os.path.join(outputPath, "output_Image")
+        if not os.path.exists(self.output):
+            os.mkdir(self.output)
         self.global_cache = dict()
-        self.studentsPath = students
-
-
+        col = ["ID","NAME"]
+        self.studentsInfo = pd.read_csv(studentsInfo, usecols=col)
+        print(len(self.studentsInfo["ID"]))
+        self.img = image
 
     def get_min_xy(self, img):
         min_x, max_y = 0, 0
@@ -101,40 +115,11 @@ class fillID:
         img_rot = self.rotate_image(thresh, -angle)
         min_x, max_y = self.get_min_xy(img_rot)
         img_cropped = img_rot[:max_y - 5, min_x + 5:]
-        plt.imshow(img_cropped, cmap='gray')
-        plt.show()
         self.global_cache['x_off'] = min_x + 5
         self.global_cache['y_off'] = max_y + 5
 
         y_bars, x_bars = self.list_bars(img_cropped)
         return img_cropped, y_bars, x_bars
-
-    # def get_ans(sself,img, chapter_bars, question_bars, chapter, question):
-    #     if chapter > 5:
-    #         chapter -= 3
-    #         question += 30
-    #     ans = np.zeros((4,))
-    #     for i in range(1, 5):
-    #         y1, y2 = chapter_bars[5 * (chapter - 1) + i]
-    #         x1, x2 = question_bars[question - 1]
-    #         ans[i - 1] = np.sum(img[y1:y2, x1:x2])
-    #     if np.all(ans > ans.max() / 2):
-    #         return None
-    #     return np.argmin(ans)
-    #
-
-    def fill_id(self, img, id_bars, question_bars, id_number):
-        t = self.global_cache['angle']
-        x_off = self.global_cache['x_off']
-        ellipse_size = (5, 8)
-        for i in range(len(id_number)):
-            chap_bar = id_bars[i]
-            ques_bar = question_bars[40 - (id_number[i] - '0')]
-            center = (int(sum(ques_bar) / 2), int(sum(chap_bar) / 2),)
-        # center = rotate_point(center[0] + 3, center[1] +4, t)
-        # center = center[0] - 3, center[1] - 4
-            center = center[0] + x_off, center[1]
-            cv2.ellipse(img, center, ellipse_size, 0, 0, 360, (0, 255, 0), -1)
 
     def rotate_point(self, x, y, t):
         t = np.radians(t)
@@ -148,22 +133,46 @@ class fillID:
         end = y_axis[0][1]
         start = y_axis[0][0]
         y_arr = []
-        for i in range(9):
+        for i in range(ID_LENGTH):
             y_arr.append((start, end))
             end = start - diff
             start = end - h
         return y_arr
 
-    def doAction(self, path, id_number):
-        img, chapter_bars, question_bars = self.process_image(path)
-        res = self.rotate_image(cv2.imread(path), -self.global_cache['angle'])
+    def fill_id(self, img, id_bars, question_bars, id_number):
+        t = self.global_cache['angle']
+        x_off = self.global_cache['x_off']
+        ellipse_size = (5, 8)
+        for i in range(ID_LENGTH):
+            chap_bar = id_bars[i]
+            id_number = str(id_number)
+            ques_bar = question_bars[48 - int(id_number[len(id_number) - i - 1])]
+            center = (int(sum(ques_bar) / 2), int(sum(chap_bar) / 2),)
+            center = center[0] + x_off, center[1]
+            cv2.ellipse(img, center, ellipse_size, 0, 0, 360, (0, 255, 0), -1)
+
+    def doAction(self, id_number, name, number):
+        img, chapter_bars, question_bars = self.process_image(self.img)
+        res = self.rotate_image(cv2.imread(self.img), -self.global_cache['angle'])
         y_arr = self.findIDPos(chapter_bars)
-        self.fill_id(img, y_arr, question_bars,id_number)
-        cv2.imwrite('detected.png', res)
+        self.fill_id(res, y_arr, question_bars, id_number)
+        cv2.imwrite(self.output + '/image' + str(number) + '.png', res)
+        res = cv2.putText(res, name, (int(res.shape[1]*3/4),HEGIHT), FONT,
+                            1, (0,0,0),2, cv2.LINE_AA)
         plt.imshow(res, cmap='gray')
         plt.show()
 
+    def makePic(self):
+        for i in range(len(self.studentsInfo)):
+            self.doAction(self.studentsInfo["ID"][i], self.studentsInfo["NAME"][i],i)
+
+
+
+
 if __name__ == '__main__':
-    a = fillID("")
-    a.doAction('image.jpeg','208179804')
+    a = fillID("/cs/usr/hussamsal/PycharmProjects/image/image.jpeg",
+               "/cs/usr/hussamsal/PycharmProjects/image/r6kdata.csv",
+               "/cs/usr/hussamsal/PycharmProjects/image")
+    a.makePic()
+
 
