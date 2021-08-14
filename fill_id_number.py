@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas as pd
+
+
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 ID_LENGTH = 8
 HEGIHT = 50
@@ -139,7 +141,7 @@ class fillID:
             start = end - h
         return y_arr
 
-    def fill_id(self, img, id_bars, question_bars, id_number):
+    def fill_id(self, img, id_bars, question_bars, id_number,name):
         x_off = self.global_cache['x_off']
         ellipse_size = (5, 8)
         for i in range(ID_LENGTH):
@@ -149,17 +151,18 @@ class fillID:
             center = (int(sum(ques_bar) / 2), int(sum(chap_bar) / 2),)
             center = center[0] + x_off, center[1]
             cv2.ellipse(img, center, ellipse_size, 0, 0, 360, (0, 0, 0), -1)
+            cv2.putText(img,name, (int(img.shape[1] * 3 / 4), HEGIHT), FONT,
+                        1, (0, 0, 0), 2, cv2.LINE_AA)
 
     def doAction(self, id_number, name, number):
         img, chapter_bars, question_bars = self.process_image(self.img)
         res = self.rotate_image(cv2.imread(self.img), -self.global_cache['angle'])
         y_arr = self.findIDPos(chapter_bars)
-        self.fill_id(res, y_arr, question_bars, id_number)
+        self.fill_id(res, y_arr, question_bars, id_number,name)
         cv2.imwrite(self.output + '/image' + str(number) + '.png', res)
-        res = cv2.putText(res, name, (int(res.shape[1]*3/4),HEGIHT), FONT,
-                            1, (0,0,0),2, cv2.LINE_AA)
         plt.imshow(res, cmap='gray')
         plt.show()
+
 
     def makePic(self):
         for i in range(len(self.studentsInfo)):
