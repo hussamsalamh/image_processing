@@ -113,7 +113,7 @@ class imageProcessing:
         t = np.arctan(abs(x1 - x2) / y_offset)
         t_deg = np.degrees(t)
         self.global_cache['angle'] = t_deg
-        print(f'Image is rotated by {t_deg} degrees')
+        # print(f'Image is rotated by {t_deg} degrees')
         return t_deg
 
     def rotate_image(self, image, angle):
